@@ -2,7 +2,10 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 import { useRef } from 'react';
 import { useTheme } from '../../hooks/useTheme';
 import projectsData from '../../data/projects';
-
+import project1 from "../../assets/images/MergedImages.png"
+import project2 from "../../assets/images/MergedImages (2).png"
+import project3 from "../../assets/images/Screenshot (228).png"
+import project4 from "../../assets/images/Screenshot (188).png"
 
 
 const ProjectCard = ({ project, index }) => {
@@ -101,7 +104,7 @@ const Projects = () => {
   const scaleX = useTransform(scrollYProgress, [0, 1], [0, 1]);
 
   return (
-    <div className="relative" ref={containerRef}>
+    <div className="relative overflow-x-hidden" ref={containerRef}>
       <motion.div
         className="fixed top-0 left-0 right-0 h-1 bg-accent/20 z-40"
         style={{ scaleX }}

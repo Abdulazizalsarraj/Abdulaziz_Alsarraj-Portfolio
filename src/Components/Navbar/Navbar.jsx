@@ -28,13 +28,13 @@ const Navbar = () => {
 
   return (
     <motion.nav
-      className="fixed top-0 w-full z-50 px-6 lg:px-24 py-4 bg-primary/90 dark:bg-primary-dark/90 border-b border-blue-500/30 dark:border-purple-900/30 backdrop-blur-lg transition-colors duration-300"
+      className="fixed top-0 w-full z-50 px-4 sm:px-6 md:px-8 lg:px-24 py-4 bg-primary/90 dark:bg-primary-dark/90 border-b border-blue-500/30 dark:border-purple-900/30 backdrop-blur-lg transition-colors duration-300"
       initial={{ y: -100, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.8 }}
     >
       <motion.div
-        className="flex justify-between items-center rounded-full px-8 py-3 shadow-glass-lg w-full lg:w-auto"
+        className="flex justify-between items-center rounded-full w-full"
         whileHover={{ scale: 1.02 }}
         transition={{ type: 'spring', stiffness: 300 }}
       >
