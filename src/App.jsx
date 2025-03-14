@@ -1,7 +1,7 @@
 import { createBrowserRouter, RouterProvider } from 'react-router-dom';
 import { HelmetProvider } from 'react-helmet-async';
 import Home from './Components/Home/Home';
-import Projects from './components/Projects/Projects';
+import Projects from './Components/Projects/Projects';
 import Navbar from './Components/Navbar/Navbar';
 import About from './Components/About/About';
 import Contact from './Components/Contact/Contact';
