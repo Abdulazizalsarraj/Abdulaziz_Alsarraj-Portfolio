@@ -2,7 +2,15 @@ import image1 from "../assets/images/MergedImages.png"
 import image2 from "../assets/images/MergedImages (2).png"
 import image3 from "../assets/images/Screenshot (228).png"
 import image4 from "../assets/images/Screenshot (188).png"
+import image5 from "../assets/images/remoter-interview.png"
 const projects = [
+    {
+      title: "Remote Interviews Platform",
+      tech: ["Next.js", "TypeScript", "Clerk", "Convex", "Tailwind CSS", "Shadcn/UI", "Stream Video SDK", "monaco-editor"],
+      description: "Next.js remote interview platform with real-time video, code editor, Clerk Authentication & Convex DB and analytics",
+      image: image5,
+      link: "https://remote-interview-platform-taupe.vercel.app/"
+    },
     {
       title: "E-Commerce Platform",
       tech: ["React.js", "Stripe", "chart.js", "three.js", "firebase", "framer-motion", "Redux" ,"Tailwind CSS"],
