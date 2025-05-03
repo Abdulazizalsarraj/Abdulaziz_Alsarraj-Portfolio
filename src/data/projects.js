@@ -3,7 +3,15 @@ import image2 from "../assets/images/MergedImages (2).png"
 import image3 from "../assets/images/Screenshot (228).png"
 import image4 from "../assets/images/Screenshot (188).png"
 import image5 from "../assets/images/remoter-interview.png"
+import image6 from "../assets/images/AI Fitness Trainer.png"
 const projects = [
+      {
+      title: "AI Fitness Trainer",
+      tech: ["Next.js", "TypeScript", "Clerk", "Convex", "Tailwind CSS", "Shadcn/UI", "Vapi", "Gemini AI"],
+      description: "AI Fitness Trainer — Innovative web application leveraging Next.js, Tailwind CSS, shadcn, Clerk, Convex and Vapi to deliver an AI-powered personal training experience. Users connect via real-time voice calls with a smart coach that analyzes goals, fitness level and dietary preferences to generate tailored workout regimens and meal plans. Secure authentication, scalable data management and a responsive UI ensure a seamless, personalized journey toward optimal health and performance.",
+      image: image6,
+      link: "https://ai-fitness-trainer-six.vercel.app/"
+    },
     {
       title: "Remote Interviews Platform",
       tech: ["Next.js", "TypeScript", "Clerk", "Convex", "Tailwind CSS", "Shadcn/UI", "Stream Video SDK", "monaco-editor"],
