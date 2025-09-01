@@ -38,7 +38,7 @@ const Navbar = () => {
         whileHover={{ scale: 1.02 }}
         transition={{ type: 'spring', stiffness: 300 }}
       >
-   
+  
         <motion.img
           src={Logo} 
           alt="Logo"
@@ -48,46 +48,40 @@ const Navbar = () => {
           className="h-14 w-14 p-2 rounded-lg cursor-pointer"
         />
 
-    
-        <div className="flex gap-8 items-center hidden lg:flex">
-          {navItems.map((item, index) => (
-            <motion.div
-              key={item.name}
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.2 + 0.5 }}
-            >
-              <NavLink
-                to={item.path}
-                onClick={(e) => {
-                  e.preventDefault();
-                  handleNavigate(item.path);
-                }} 
-                className={({ isActive }) =>
-                  `font-medium relative group transition-transform transform hover:scale-105 text-gray-700 dark:text-gray-300 hover:opacity-60 ${
-                    isActive ? 'p-1 border-b-2 border-accent dark:border-accent-dark opacity-60' : ''
-                  }`
-                }
-              >
-                {item.name}
-                <motion.span
-                  className="absolute -bottom-1 left-0 w-0 h-0.5 bg-accent dark:bg-accent-dark transition-all duration-300 group-hover:w-full"
-                />
-              </NavLink>
-            </motion.div>
-          ))}
 
-          <motion.button
-            onClick={toggleTheme}
-            className="p-3 rounded-full bg-white/10 backdrop-blur-lg shadow-lg text-accent dark:text-accent-dark"
-            whileHover={{ scale: 1.1 }}
-          >
-            {theme === 'dark' ? '🌞' : '🌙'}
-          </motion.button>
+        <div className="hidden lg:flex absolute left-1/2 transform -translate-x-1/2">
+          <div className="flex gap-8 items-center">
+            {navItems.map((item, index) => (
+              <motion.div
+                key={item.name}
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.2 + 0.5 }}
+              >
+                <NavLink
+                  to={item.path}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleNavigate(item.path);
+                  }} 
+                  className={({ isActive }) =>
+                    `font-medium relative group transition-transform transform hover:scale-105 text-gray-700 dark:text-gray-300 hover:opacity-60 ${
+                      isActive ? 'p-1 border-b-2 border-accent dark:border-accent-dark opacity-60' : ''
+                    }`
+                  }
+                >
+                  {item.name}
+                  <motion.span
+                    className="absolute -bottom-1 left-0 w-0 h-0.5 bg-accent dark:bg-accent-dark transition-all duration-300 group-hover:w-full"
+                  />
+                </NavLink>
+              </motion.div>
+            ))}
+          </div>
         </div>
 
-    
-        <div className="lg:hidden flex items-center">
+      
+        <div className="flex items-center">
           <motion.button
             onClick={toggleTheme}
             className="p-3 rounded-full bg-white/10 backdrop-blur-lg shadow-lg text-accent dark:text-accent-dark"
@@ -96,9 +90,9 @@ const Navbar = () => {
             {theme === 'dark' ? '🌞' : '🌙'}
           </motion.button>
 
-       
+    
           <motion.div
-            className="flex flex-col items-center justify-center space-y-1 mx-5 cursor-pointer"
+            className="flex flex-col items-center justify-center space-y-1 mx-5 cursor-pointer lg:hidden"
             onClick={toggleMenu}
             whileHover={{ scale: 1.2 }}
             transition={{ type: 'spring', stiffness: 300 }}
@@ -110,7 +104,7 @@ const Navbar = () => {
         </div>
       </motion.div>
 
-      
+
       {isMenuOpen && (
         <motion.div
           className="lg:hidden absolute top-16 left-0 w-full h-screen bg-primary/90 dark:bg-primary-dark/90 backdrop-blur-lg p-6 flex flex-col items-center space-y-6 mt-5"
