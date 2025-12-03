@@ -714,7 +714,7 @@ const Home = () => {
               </h2>
               <p className="text-base sm:text-lg lg:text-xl text-white/90 mb-6 lg:mb-8 max-w-2xl mx-auto">
                 Ready to bring your ideas to life? Get in touch and let's create
-                something extraordinary.
+                something extraordinary. 
               </p>
               <motion.button
                 className="inline-flex items-center gap-2 px-8 lg:px-10 py-4 lg:py-5 rounded-xl lg:rounded-2xl bg-white text-gray-900 font-bold text-base lg:text-lg shadow-xl hover:shadow-2xl transition-all focus:outline-none focus:ring-4 focus:ring-white/50"
