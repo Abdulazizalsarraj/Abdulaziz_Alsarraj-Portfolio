@@ -212,7 +212,7 @@ const About = () => {
         
         {/* 3D Model Section */}
         <motion.div 
-          className="w-full lg:w-1/2 h-[400px] sm:h-[500px] lg:h-[600px] relative"
+          className="w-full lg:w-1/2 h-[400px] sm:h-[500px] lg:h-[600px] relative hidden md:block"
           initial={{ opacity: 0, x: -100 }}
           animate={{ opacity: 1, x: 0 }}
           transition={{ duration: 1 }}
@@ -270,7 +270,7 @@ const About = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
           >
-            <span className="inline-block mt-4 px-4 py-2 rounded-full bg-accent/10 dark:bg-accent-dark/10 text-accent dark:text-accent-dark text-sm font-semibold mb-4">
+            <span className="inline-block mt-5 px-4 py-2 rounded-full bg-accent/10 dark:bg-accent-dark/10 text-accent dark:text-accent-dark text-sm font-semibold mb-4">
               Welcome to My Portfolio
             </span>
           </motion.div>
@@ -442,7 +442,7 @@ const About = () => {
       </div>
 
       {/* Interactive 3D Background Section */}
-      <div className="relative w-full h-[400px] sm:h-[500px] my-20">
+      <div className="relative w-full h-[400px] sm:h-[500px] my-20 hidden md:block">
         <div className="absolute inset-0 bg-gradient-to-b from-transparent via-accent/5 to-transparent" />
         <Canvas>
           <PerspectiveCamera makeDefault position={[0, 0, 5]} />

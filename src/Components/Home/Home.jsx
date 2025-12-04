@@ -14,7 +14,7 @@ import {
   FiMail,
 } from "react-icons/fi";
 import { FaTelegramPlane, FaInstagram } from "react-icons/fa";
-import profileImage from "../../assets/images/linkedInprofile.jfif";
+import profileImage from "../../assets/images/linkedInprofile.png";
 import { useNavigate } from "react-router-dom";
 import cv from "../../assets/Abdulaziz Alsarraj - Front-End Developer.pdf";
 // ============================================
@@ -334,7 +334,7 @@ const Home = () => {
   return (
     <div className="mt-12 relative bg-white dark:bg-gray-900 transition-colors duration-300">
       {/* 3D Background Canvas */}
-      <div className="mt-12 fixed inset-0 z-0" aria-hidden="true">
+      <div className="mt-12 fixed inset-0 z-0 hidden md:block" aria-hidden="true">
         <Canvas
           camera={{ position: [0, 0, 8], fov: 50 }}
           dpr={[1, 2]}
