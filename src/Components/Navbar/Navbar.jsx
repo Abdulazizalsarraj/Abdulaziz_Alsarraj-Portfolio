@@ -11,6 +11,14 @@ import {
   Bars3Icon
 } from '@heroicons/react/24/outline';
 
+// Preload route chunks on hover — eliminates 1-2s delay on first navigation
+const preloadRoutes = {
+  '/home':     () => import('../Home/Home'),
+  '/projects': () => import('../Projects/Projects'),
+  '/about':    () => import('../About/About'),
+  '/contact':  () => import('../Contact/Contact'),
+};
+
 const navItems = [
   { 
     name: 'Home', 
@@ -188,6 +196,7 @@ const Navbar = () => {
                 >
                   <motion.button
                     onClick={() => handleNavigate(item.path)}
+                    onMouseEnter={() => preloadRoutes[item.path]?.()}
                     className="relative px-4 py-2 group rounded-full transition-all duration-300"
                     aria-label={`Navigate to ${item.name}`}
                   >
@@ -273,7 +282,7 @@ const Navbar = () => {
       <AnimatePresence>
         {isMenuOpen && (
           <motion.div
-            className="lg:hidden fixed top-20 left-0 right-0 mx-4 mt-4 rounded-2xl bg-[#0a0a0a]/98 backdrop-blur-md border border-teal-400/20 shadow-2xl p-6 max-h-[calc(100vh-100px)] overflow-y-auto"
+            className="lg:hidden fixed top-20 left-0 right-0 mx-4 mt-4 rounded-2xl bg-[#060c0b]/95 backdrop-blur-xl border border-teal-400/25 shadow-[0_8px_32px_rgba(0,211,189,0.08)] p-6 max-h-[calc(100vh-100px)] overflow-y-auto"
             initial={{ opacity: 0, y: -20, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -20, scale: 0.95 }}
@@ -293,6 +302,7 @@ const Navbar = () => {
                     animate="visible"
                     exit="exit"
                     onClick={() => handleNavigate(item.path)}
+                    onMouseEnter={() => preloadRoutes[item.path]?.()}
                     className={`w-full px-6 py-4 rounded-xl font-semibold text-lg transition-all duration-300 flex items-center gap-3 group relative overflow-hidden ${
                       isActivePath
                         ? 'bg-gradient-to-r from-teal-400 to-cyan-400 text-slate-900 shadow-lg shadow-teal-400/30'
