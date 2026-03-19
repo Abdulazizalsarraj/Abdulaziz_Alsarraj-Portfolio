@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <linearGradient id="vite-grad1" x1="10" y1="4" x2="32" y2="40" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#41d1ff"/>
+      <stop offset="100%" stop-color="#bd34fe"/>
+    </linearGradient>
+    <linearGradient id="vite-grad2" x1="28" y1="24" x2="46" y2="58" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#ff3e00"/>
+      <stop offset="100%" stop-color="#ffd600"/>
+    </linearGradient>
+  </defs>
+  <!-- Outer lightning bolt shape -->
+  <path d="M36 4 L14 36 H30 L28 60 L50 28 H34 Z" fill="url(#vite-grad1)"/>
+  <!-- Inner accent -->
+  <path d="M36 4 L26 28 H34 L28 60 L50 28 H40 Z" fill="url(#vite-grad2)" opacity="0.6"/>
+</svg>

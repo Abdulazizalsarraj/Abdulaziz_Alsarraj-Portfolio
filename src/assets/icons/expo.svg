@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <defs>
+    <radialGradient id="expo-glow" cx="50%" cy="40%" r="55%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#c0c0c0" stop-opacity="0.85"/>
+    </radialGradient>
+  </defs>
+  <!-- Dark background circle -->
+  <circle cx="32" cy="32" r="30" fill="#000000"/>
+  <!-- Expo "E" arc logo — two sweeping arcs forming the shape -->
+  <path
+    d="M10 32 Q10 10 32 6 Q54 10 54 32 Q54 54 32 58 Q10 54 10 32Z"
+    stroke="#ffffff" stroke-width="0" fill="none"
+  />
+  <!-- Left arc -->
+  <path d="M8 32 Q14 6 38 8" stroke="url(#expo-glow)" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <!-- Right arc -->
+  <path d="M56 32 Q50 6 26 8" stroke="url(#expo-glow)" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <!-- Bottom convergence -->
+  <path d="M8 32 Q14 58 32 60 Q50 58 56 32" stroke="url(#expo-glow)" stroke-width="5" fill="none" stroke-linecap="round"/>
+  <!-- Center dot -->
+  <circle cx="32" cy="32" r="5" fill="white"/>
+</svg>

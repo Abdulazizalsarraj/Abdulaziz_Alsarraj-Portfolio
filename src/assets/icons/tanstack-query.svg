@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Background circle -->
+  <circle cx="32" cy="32" r="30" fill="#FF4154" opacity="0.12"/>
+
+  <!-- TanStack Query logo — stylized "Q" with arrows -->
+  <!-- Outer arc -->
+  <path d="M32 10 C19.85 10 10 19.85 10 32 C10 44.15 19.85 54 32 54 C44.15 54 54 44.15 54 32 C54 19.85 44.15 10 32 10Z"
+        stroke="#FF4154" stroke-width="4" fill="none" stroke-linecap="round"
+        stroke-dasharray="70 15"/>
+
+  <!-- Inner circle -->
+  <circle cx="32" cy="32" r="8" fill="#FF4154" opacity="0.9"/>
+
+  <!-- Refresh arrows -->
+  <path d="M22 22 Q16 27 18 34" stroke="#FF4154" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  <path d="M18 34 L14 32 M18 34 L20 30" stroke="#FF4154" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+
+  <path d="M42 42 Q48 37 46 30" stroke="#FF4154" stroke-width="3.5" fill="none" stroke-linecap="round"/>
+  <path d="M46 30 L50 32 M46 30 L44 34" stroke="#FF4154" stroke-width="3" fill="none" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

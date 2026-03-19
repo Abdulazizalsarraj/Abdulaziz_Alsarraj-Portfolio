@@ -1,9 +1,9 @@
 /** @format */
 
-import { motion, useScroll, useTransform, useSpring } from "framer-motion";
-import { Canvas } from "@react-three/fiber";
-import { OrbitControls, Stars, Float, Sphere } from "@react-three/drei";
-import { useRef, useState, useEffect, useMemo, Suspense } from "react";
+import { motion, useScroll, useTransform, useSpring, useInView } from "framer-motion";
+import { useRef, useState, useEffect, useMemo, Suspense, memo, lazy } from "react";
+
+const ThreeBackground = lazy(() => import('./ThreeBackground'));
 import {
   FiGithub,
   FiLinkedin,
@@ -14,151 +14,127 @@ import {
   FiMail,
 } from "react-icons/fi";
 import { FaTelegramPlane, FaInstagram } from "react-icons/fa";
-import profileImage from "../../assets/images/linkedInprofile.png";
+import profileImage from "../../assets/images/linkedInprofile.webp";
 import { useNavigate } from "react-router-dom";
+import { Helmet } from "react-helmet-async";
 import cv from "../../assets/Abdulaziz Alsarraj - Front-End Developer.pdf";
+import useReducedMotion from "../../hooks/useReducedMotion";
+import useIsMobile from "../../hooks/useIsMobile";
+
 // ============================================
-// 3D Components (Optimized)
+// ThreeBackground Skeleton (shown while 3D loads)
 // ============================================
-
-const AnimatedSphere = ({ theme }) => {
-  const meshRef = useRef();
-
-  useEffect(() => {
-    if (!meshRef.current) return;
-
-    let animationFrameId;
-    const animate = () => {
-      if (meshRef.current) {
-        meshRef.current.rotation.x += 0.001;
-        meshRef.current.rotation.y += 0.002;
-        animationFrameId = requestAnimationFrame(animate);
-      }
-    };
-    animate();
-
-    return () => {
-      if (animationFrameId) cancelAnimationFrame(animationFrameId);
-    };
-  }, []);
-
-  const sphereColor = theme === "dark" ? "#7C3AED" : "#4F46E5";
-
-  return (
-    <Float speed={2} rotationIntensity={0.5} floatIntensity={1}>
-      <Sphere ref={meshRef} args={[1, 32, 32]} scale={2.5}>
-        <meshStandardMaterial
-          color={sphereColor}
-          wireframe
-          transparent
-          opacity={0.3}
-          emissive={sphereColor}
-          emissiveIntensity={0.5}
-        />
-      </Sphere>
-    </Float>
-  );
-};
-
-const Scene3D = ({ theme, accentColor }) => (
-  <Suspense fallback={null}>
-    <ambientLight intensity={0.5} />
-    <pointLight position={[10, 10, 10]} intensity={1.5} color={accentColor} />
-    <pointLight
-      position={[-10, -10, -10]}
-      intensity={0.5}
-      color={theme === "dark" ? "#3B82F6" : "#60A5FA"}
-    />
-    <Stars
-      radius={100}
-      depth={50}
-      count={5000}
-      factor={4}
-      saturation={0}
-      fade
-      speed={1}
-    />
-    <AnimatedSphere theme={theme} />
-    <OrbitControls
-      enableZoom={false}
-      autoRotate
-      autoRotateSpeed={0.5}
-      enablePan={false}
-    />
-  </Suspense>
+const ThreeBackgroundSkeleton = () => (
+  <div
+    className="absolute inset-0"
+    style={{ background: 'radial-gradient(ellipse at 60% 40%, rgba(0,211,189,0.08) 0%, transparent 60%)' }}
+    aria-hidden="true"
+  />
 );
+
+// ============================================
+// Mobile Hero Visual (CSS-only, no WebGL)
+// ============================================
+const MobileHeroVisual = memo(({ theme }) => {
+  const accent = '#00d3bd';
+  const accent2 = '#00d2ef';
+  const reducedMotion = useReducedMotion();
+  return (
+    <div className="relative w-full h-full flex items-center justify-center" aria-hidden="true">
+      <div
+        className="absolute inset-0 rounded-3xl opacity-20"
+        style={{ background: `radial-gradient(ellipse at 50% 50%, ${accent}50 0%, transparent 70%)` }}
+      />
+      <motion.div
+        className="absolute w-64 h-64 rounded-full border-2 opacity-25"
+        style={{ borderColor: accent }}
+        animate={reducedMotion ? {} : { rotate: 360 }}
+        transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
+      />
+      <motion.div
+        className="absolute w-44 h-44 rounded-full border-2 border-dashed opacity-20"
+        style={{ borderColor: accent2 }}
+        animate={reducedMotion ? {} : { rotate: -360 }}
+        transition={{ duration: 14, repeat: Infinity, ease: 'linear' }}
+      />
+      <motion.div
+        className="w-28 h-28 rounded-full"
+        style={{ background: `radial-gradient(circle at 35% 35%, ${accent2}, ${accent})` }}
+        animate={reducedMotion ? {} : { scale: [1, 1.05, 1] }}
+        transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+      />
+    </div>
+  );
+});
 
 // ============================================
 // Utility Components
 // ============================================
 
-const TypewriterText = ({ texts, className }) => {
+const TypewriterText = memo(({ texts, className }) => {
   const [displayText, setDisplayText] = useState("");
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
+  // نتتبع الـ pause timeout منفصلاً لتنظيفه
+  const pauseRef = useRef(null);
 
   useEffect(() => {
     const currentText = texts[currentIndex];
-    const timeout = setTimeout(
-      () => {
-        if (!isDeleting) {
-          if (displayText.length < currentText.length) {
-            setDisplayText(currentText.slice(0, displayText.length + 1));
-          } else {
-            setTimeout(() => setIsDeleting(true), 2000);
-          }
+    const timeout = setTimeout(() => {
+      if (!isDeleting) {
+        if (displayText.length < currentText.length) {
+          setDisplayText(currentText.slice(0, displayText.length + 1));
         } else {
-          if (displayText.length > 0) {
-            setDisplayText(currentText.slice(0, displayText.length - 1));
-          } else {
-            setIsDeleting(false);
-            setCurrentIndex((prev) => (prev + 1) % texts.length);
-          }
+          // نحفظ المرجع حتى نتمكن من إلغائه عند unmount
+          pauseRef.current = setTimeout(() => setIsDeleting(true), 2000);
         }
-      },
-      isDeleting ? 50 : 100
-    );
+      } else {
+        if (displayText.length > 0) {
+          setDisplayText(currentText.slice(0, displayText.length - 1));
+        } else {
+          setIsDeleting(false);
+          setCurrentIndex((prev) => (prev + 1) % texts.length);
+        }
+      }
+    }, isDeleting ? 50 : 100);
 
-    return () => clearTimeout(timeout);
+    return () => {
+      clearTimeout(timeout);
+      clearTimeout(pauseRef.current);
+    };
   }, [displayText, currentIndex, isDeleting, texts]);
 
   return (
     <span className={className}>
       {displayText}
-      <span className="animate-pulse ml-1">|</span>
+      <span className="animate-pulse ml-1" aria-hidden="true">|</span>
     </span>
   );
-};
+});
 
-const StatCounter = ({ end, label, suffix = "+", duration = 2 }) => {
+const StatCounter = memo(({ end, label, suffix = "+" }) => {
   const [count, setCount] = useState(0);
-  const [hasAnimated, setHasAnimated] = useState(false);
   const ref = useRef(null);
+  // useInView أخف من IntersectionObserver يدوي
+  const isInView = useInView(ref, { once: true, margin: '-10%' });
 
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !hasAnimated) {
-          setHasAnimated(true);
-          let start = 0;
-          const increment = end / (duration * 60);
-          const timer = setInterval(() => {
-            start += increment;
-            if (start >= end) {
-              setCount(end);
-              clearInterval(timer);
-            } else {
-              setCount(Math.floor(start));
-            }
-          }, 1000 / 60);
-        }
-      },
-      { threshold: 0.5 }
-    );
-
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, [end, duration, hasAnimated]);
+    if (!isInView) return;
+    const duration = 1800; // ms
+    let startTime = null;
+    let rafId;
+    const step = (timestamp) => {
+      if (!startTime) startTime = timestamp;
+      const elapsed = timestamp - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+      // easeOutQuart
+      const eased = 1 - Math.pow(1 - progress, 4);
+      setCount(Math.floor(eased * end));
+      if (progress < 1) rafId = requestAnimationFrame(step);
+    };
+    rafId = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(rafId);
+  }, [isInView, end]);
 
   return (
     <motion.div
@@ -169,42 +145,46 @@ const StatCounter = ({ end, label, suffix = "+", duration = 2 }) => {
       viewport={{ once: true }}
       transition={{ duration: 0.5 }}
     >
-      <motion.div
-        className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent"
-        initial={{ scale: 0 }}
-        whileInView={{ scale: 1 }}
-        viewport={{ once: true }}
-        transition={{ type: "spring", stiffness: 100 }}
-      >
-        {count}
-        {suffix}
-      </motion.div>
+      <div className="text-3xl sm:text-4xl lg:text-5xl font-bold bg-gradient-to-r from-teal-400 to-cyan-400 bg-clip-text text-transparent">
+        {count}{suffix}
+      </div>
       <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-2 font-medium">
         {label}
       </p>
     </motion.div>
   );
-};
+});
 
-const FloatingParticles = () => {
-  const particles = useMemo(
-    () =>
-      Array.from({ length: 12 }, (_, i) => ({
-        id: i,
-        left: `${Math.random() * 100}%`,
-        top: `${Math.random() * 100}%`,
-        delay: Math.random() * 2,
-        duration: 3 + Math.random() * 2,
-      })),
-    []
-  );
+const HOME_PARTICLES_DESKTOP = Array.from({ length: 12 }, (_, i) => ({
+  id: i,
+  left: `${(i * 8.3 + 5) % 100}%`,
+  top: `${(i * 7.7 + 3) % 100}%`,
+  delay: (i % 6) * 0.3,
+  duration: 3 + (i % 4) * 0.5,
+}));
+
+const HOME_PARTICLES_MOBILE = Array.from({ length: 5 }, (_, i) => ({
+  id: i,
+  left: `${(i * 20 + 5) % 100}%`,
+  top: `${(i * 18 + 3) % 100}%`,
+  delay: (i % 3) * 0.4,
+  duration: 3 + (i % 3) * 0.5,
+}));
+
+const FloatingParticles = memo(() => {
+  const reducedMotion = useReducedMotion();
+  const isMobile = useIsMobile();
+
+  if (reducedMotion) return null;
+
+  const particles = isMobile ? HOME_PARTICLES_MOBILE : HOME_PARTICLES_DESKTOP;
 
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+    <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
       {particles.map((particle) => (
         <motion.div
           key={particle.id}
-          className="absolute w-2 h-2 bg-blue-500/30 dark:bg-purple-500/30 rounded-full"
+          className="absolute w-2 h-2 bg-teal-400/30 rounded-full"
           style={{ left: particle.left, top: particle.top }}
           animate={{ y: [0, -30, 0], opacity: [0.3, 1, 0.3] }}
           transition={{
@@ -216,7 +196,7 @@ const FloatingParticles = () => {
       ))}
     </div>
   );
-};
+});
 
 // ============================================
 // Main Component
@@ -224,7 +204,9 @@ const FloatingParticles = () => {
 
 const Home = () => {
   const [theme, setTheme] = useState("dark");
-  const accentColor = theme === "dark" ? "#7C3AED" : "#4F46E5";
+  const accentColor = "#00d3bd";
+  const isMobile = useIsMobile();
+  const reducedMotion = useReducedMotion();
   const containerRef = useRef(null);
   const navigate = useNavigate();
 
@@ -302,21 +284,21 @@ const Home = () => {
         title: "Clean Code",
         description:
           "Writing maintainable, scalable, and testable code following best practices and SOLID principles.",
-        gradient: "from-blue-500 to-cyan-500",
+        gradient: "from-teal-400 to-cyan-400",
       },
       {
         icon: FiZap,
         title: "Fast Performance",
         description:
           "Optimized bundle sizes, lazy loading, and efficient rendering for lightning-fast experiences.",
-        gradient: "from-purple-500 to-pink-500",
+        gradient: "from-cyan-500 to-teal-400",
       },
       {
         icon: FiAward,
         title: "Best Practices",
         description:
           "Following industry standards, accessibility guidelines (WCAG), and modern web development patterns.",
-        gradient: "from-orange-500 to-red-500",
+        gradient: "from-teal-500 to-cyan-400",
       },
     ],
     []
@@ -332,28 +314,36 @@ const Home = () => {
   );
 
   return (
-    <div className="mt-12 relative bg-white dark:bg-gray-900 transition-colors duration-300">
-      {/* 3D Background Canvas */}
-      <div className="mt-12 fixed inset-0 z-0 hidden md:block" aria-hidden="true">
-        <Canvas
-          camera={{ position: [0, 0, 8], fov: 50 }}
-          dpr={[1, 2]}
-          performance={{ min: 0.5 }}
-        >
-          <Scene3D theme={theme} accentColor={accentColor} />
-        </Canvas>
-      </div>
+    <div className="mt-12 relative bg-primary transition-colors duration-300">
+      <Helmet>
+        <title>Abdulaziz Alsarraj | Frontend Developer</title>
+        <meta name="description" content="Frontend Developer specializing in React, Next.js and modern web technologies. Crafting immersive web experiences with pixel-perfect implementation." />
+        <meta name="keywords" content="Frontend Developer, React, Next.js, TypeScript, Tailwind CSS, UI/UX, Web Development" />
+        <meta property="og:title" content="Abdulaziz Alsarraj | Frontend Developer" />
+        <meta property="og:description" content="Frontend Developer crafting immersive web experiences with modern technologies." />
+        <meta property="og:type" content="website" />
+        <link rel="canonical" href="https://abdulazizalsarraj.dev/" />
+      </Helmet>
+
+      {/* Desktop: Three.js 3D background (lazy loaded, skeleton shown while loading) */}
+      {!isMobile && (
+        <div className="mt-12 fixed inset-0 z-[1]" aria-hidden="true">
+          <Suspense fallback={<ThreeBackgroundSkeleton />}>
+            <ThreeBackground accentColor={accentColor} />
+          </Suspense>
+        </div>
+      )}
 
       {/* Gradient Overlay */}
       <div
-        className="fixed inset-0 bg-gradient-to-br from-transparent via-blue-500/5 to-purple-500/5 dark:via-blue-500/10 dark:to-purple-500/10 pointer-events-none z-[1]"
+        className="fixed inset-0 bg-gradient-to-br from-transparent via-teal-500/5 to-cyan-500/5 pointer-events-none z-[1]"
         aria-hidden="true"
       />
 
       {/* Skip to main content - Accessibility */}
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-blue-600 focus:text-white focus:rounded-lg"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:px-4 focus:py-2 focus:bg-teal-500 focus:text-white focus:rounded-lg"
       >
         Skip to main content
       </a>
@@ -375,7 +365,7 @@ const Home = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
             >
-              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-200 dark:border-gray-700 shadow-lg">
+              <span className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-secondary/90 backdrop-blur-md border border-teal-400/20 shadow-lg">
                 <span
                   className="relative flex h-3 w-3"
                   aria-label="Available for work"
@@ -383,7 +373,7 @@ const Home = () => {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                   <span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span>
                 </span>
-                <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                <span className="text-sm font-semibold text-gray-300">
                   Available for work
                 </span>
               </span>
@@ -395,14 +385,14 @@ const Home = () => {
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.2, duration: 0.8 }}
             >
-              <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold leading-tight text-gray-900 dark:text-white">
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold leading-tight text-white">
                 Hi, I'm
                 <br />
-                <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-teal-400 via-cyan-400 to-teal-300 bg-clip-text text-transparent">
                   Abdulaziz Alsarraj
                 </span>
               </h1>
-              <div className="mt-4 text-xl sm:text-2xl lg:text-3xl font-semibold text-gray-700 dark:text-gray-300 min-h-[40px]">
+              <div className="mt-4 text-xl sm:text-2xl lg:text-3xl font-semibold text-gray-300 min-h-[40px]">
                 <TypewriterText
                   texts={[
                     "Frontend Developer",
@@ -410,20 +400,20 @@ const Home = () => {
                     "Problem Solver",
                     "Creative Thinker",
                   ]}
-                  className="bg-gradient-to-r from-gray-700 to-gray-900 dark:from-gray-300 dark:to-white bg-clip-text text-transparent"
+                  className="bg-gradient-to-r from-gray-300 to-white bg-clip-text text-transparent"
                 />
               </div>
             </motion.div>
 
             {/* Description */}
             <motion.p
-              className="text-base sm:text-lg lg:text-xl text-gray-600 dark:text-gray-400 leading-relaxed max-w-2xl"
+              className="text-base sm:text-lg lg:text-xl text-gray-400 leading-relaxed max-w-2xl"
               initial={{ y: 30, opacity: 0 }}
               animate={{ y: 0, opacity: 1 }}
               transition={{ delay: 0.4, duration: 0.8 }}
             >
               Crafting{" "}
-              <span className="text-blue-600 dark:text-blue-400 font-semibold">
+              <span className="text-teal-400 font-semibold">
                 immersive web experiences
               </span>{" "}
               with modern technologies and pixel-perfect implementation.
@@ -438,17 +428,17 @@ const Home = () => {
               transition={{ delay: 0.6, type: "spring", stiffness: 200 }}
             >
               <motion.button
-                className="group relative px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-semibold text-white overflow-hidden shadow-lg focus:outline-none focus:ring-4 focus:ring-blue-500/50"
+                className="group relative px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-semibold text-slate-900 overflow-hidden shadow-lg focus:outline-none focus:ring-4 focus:ring-teal-400/50"
                 whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.95 }}
                 aria-label="View my projects"
                 onClick={() => navigate("/projects")}
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 transition-transform group-hover:scale-110" />
+                <div className="absolute inset-0 bg-gradient-to-r from-teal-400 to-cyan-400 transition-transform group-hover:scale-110" />
                 <span className="relative z-10 flex items-center gap-2 text-sm sm:text-base">
                   View Projects
                   <motion.span
-                    animate={{ x: [0, 5, 0] }}
+                    animate={reducedMotion ? {} : { x: [0, 5, 0] }}
                     transition={{ duration: 1.5, repeat: Infinity }}
                     aria-hidden="true"
                   >
@@ -458,7 +448,7 @@ const Home = () => {
               </motion.button>
 
               <motion.button
-                className="px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl border-2 border-gray-300 dark:border-gray-600 font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors shadow-lg backdrop-blur-sm focus:outline-none focus:ring-4 focus:ring-gray-500/50 text-sm sm:text-base"
+                className="px-6 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl border-2 border-teal-400/40 font-semibold text-gray-200 hover:bg-teal-400/10 transition-colors shadow-lg backdrop-blur-sm focus:outline-none focus:ring-4 focus:ring-teal-400/30 text-sm sm:text-base"
                 whileHover={{ scale: 1.05, y: -2 }}
                 whileTap={{ scale: 0.95 }}
                 aria-label="Download my CV"
@@ -493,20 +483,16 @@ const Home = () => {
             >
               {/* Glowing Background */}
               <motion.div
-                className="absolute inset-0 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full blur-3xl opacity-30"
-                animate={{ scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
-                transition={{
-                  duration: 4,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                }}
+                className="absolute inset-0 bg-gradient-to-br from-teal-400 to-cyan-500 rounded-full blur-3xl opacity-20"
+                animate={reducedMotion ? {} : { scale: [1, 1.2, 1], opacity: [0.3, 0.5, 0.3] }}
+                transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
                 aria-hidden="true"
               />
 
               {/* Rotating Border */}
               <motion.div
-                className="absolute -inset-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full opacity-75 blur-md"
-                animate={{ rotate: 360 }}
+                className="absolute -inset-1 bg-gradient-to-r from-teal-400 via-cyan-400 to-teal-300 rounded-full opacity-60 blur-md"
+                animate={reducedMotion ? {} : { rotate: 360 }}
                 transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
                 aria-hidden="true"
               />
@@ -518,12 +504,15 @@ const Home = () => {
                   alt="Abdulaziz Alsarraj - Frontend Developer"
                   className="w-full h-full object-cover rounded-full border-4 border-white dark:border-gray-900 shadow-2xl"
                   loading="eager"
+                  width="384"
+                  height="384"
+                  decoding="async"
                 />
 
                 {/* Decorative Elements */}
                 <motion.div
-                  className="absolute -top-4 -right-4 w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full shadow-lg flex items-center justify-center"
-                  animate={{ y: [0, -10, 0], rotate: [0, 180, 360] }}
+                  className="absolute -top-4 -right-4 w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-teal-400 to-cyan-500 rounded-full shadow-lg flex items-center justify-center"
+                  animate={reducedMotion ? {} : { y: [0, -10, 0], rotate: [0, 180, 360] }}
                   transition={{ duration: 4, repeat: Infinity }}
                   aria-hidden="true"
                 >
@@ -531,8 +520,8 @@ const Home = () => {
                 </motion.div>
 
                 <motion.div
-                  className="absolute -bottom-4 -left-4 w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full shadow-lg flex items-center justify-center"
-                  animate={{ y: [0, 10, 0], rotate: [360, 180, 0] }}
+                  className="absolute -bottom-4 -left-4 w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-cyan-400 to-teal-500 rounded-full shadow-lg flex items-center justify-center"
+                  animate={reducedMotion ? {} : { y: [0, 10, 0], rotate: [360, 180, 0] }}
                   transition={{ duration: 4, repeat: Infinity, delay: 1 }}
                   aria-hidden="true"
                 >
@@ -548,7 +537,7 @@ const Home = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 1, duration: 0.8 }}
             >
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-3">
+              <h3 className="text-lg font-semibold text-white mb-3">
                 Connect With Me
               </h3>
               <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
@@ -573,11 +562,11 @@ const Home = () => {
                       <div
                         className={`absolute inset-0 rounded-2xl bg-gradient-to-r ${link.color} opacity-0 group-hover:opacity-20 blur-lg transition-all duration-300`}
                       />
-                      <div className="relative p-4 rounded-2xl bg-gradient-to-br from-white/10 to-white/5 dark:from-black/30 dark:to-black/20 backdrop-blur-xl border border-white/20 dark:border-white/10 group-hover:border-white/40 dark:group-hover:border-white/20 transition-all duration-300">
-                        <Icon className="text-2xl text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-purple-400 transition-colors duration-300" />
+                      <div className="relative p-4 rounded-2xl bg-gradient-to-br from-white/10 to-white/5 dark:from-black/30 dark:to-black/20 backdrop-blur-sm border border-white/20 dark:border-white/10 group-hover:border-white/40 dark:group-hover:border-white/20 transition-all duration-300">
+                        <Icon className="text-2xl text-gray-300 group-hover:text-teal-400 transition-colors duration-300" />
                       </div>
                       <motion.p
-                        className="mt-2 text-xs font-medium text-gray-600 dark:text-gray-400 text-center"
+                        className="mt-2 text-xs font-medium text-gray-400 text-center"
                         initial={{ opacity: 0, y: 5 }}
                         whileHover={{ opacity: 1, y: 0 }}
                       >
@@ -598,14 +587,14 @@ const Home = () => {
             transition={{ delay: 1.5 }}
             aria-hidden="true"
           >
-            <span className="text-sm text-gray-500 dark:text-gray-400 font-medium">
+            <span className="text-sm text-gray-400 font-medium">
               Scroll to explore
             </span>
             <motion.div
-              animate={{ y: [0, 10, 0] }}
+              animate={reducedMotion ? {} : { y: [0, 10, 0] }}
               transition={{ duration: 1.5, repeat: Infinity }}
             >
-              <FiArrowDown className="w-6 h-6 text-gray-500 dark:text-gray-400" />
+              <FiArrowDown className="w-6 h-6 text-teal-400" />
             </motion.div>
           </motion.div>
         </motion.section>
@@ -629,11 +618,11 @@ const Home = () => {
             >
               <h2
                 id="features-heading"
-                className="py-2 text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4"
+                className="py-2 text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-bold bg-gradient-to-r from-teal-400 to-cyan-400 bg-clip-text text-transparent mb-4"
               >
                 Why Work With Me
               </h2>
-              <p className="text-base sm:text-lg lg:text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+              <p className="text-base sm:text-lg lg:text-xl text-gray-400 max-w-2xl mx-auto">
                 Combining technical expertise with creative vision to deliver
                 exceptional results
               </p>
@@ -645,7 +634,7 @@ const Home = () => {
                 return (
                   <motion.article
                     key={index}
-                    className="group relative p-6 lg:p-8 rounded-2xl lg:rounded-3xl bg-white/90 dark:bg-gray-800/90 backdrop-blur-xl border border-gray-200 dark:border-gray-700 shadow-xl overflow-hidden"
+                    className="group relative p-6 lg:p-8 rounded-2xl lg:rounded-3xl bg-secondary/60 backdrop-blur-sm border border-teal-400/10 shadow-xl overflow-hidden"
                     initial={{ y: 50, opacity: 0 }}
                     whileInView={{ y: 0, opacity: 1 }}
                     viewport={{ once: true }}
@@ -653,7 +642,7 @@ const Home = () => {
                     whileHover={{ y: -10, scale: 1.02 }}
                   >
                     <motion.div
-                      className="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="absolute inset-0 bg-gradient-to-br from-teal-400/10 to-cyan-400/10 opacity-0 group-hover:opacity-100 transition-opacity"
                       aria-hidden="true"
                     />
 
@@ -667,11 +656,11 @@ const Home = () => {
                         <Icon className="w-5 h-5 lg:w-6 lg:h-6" />
                       </motion.div>
 
-                      <h3 className="text-xl lg:text-2xl font-bold text-gray-900 dark:text-white mb-2 lg:mb-3">
+                      <h3 className="text-xl lg:text-2xl font-bold text-white mb-2 lg:mb-3">
                         {feature.title}
                       </h3>
 
-                      <p className="text-sm lg:text-base text-gray-600 dark:text-gray-400 leading-relaxed">
+                      <p className="text-sm lg:text-base text-gray-400 leading-relaxed">
                         {feature.description}
                       </p>
                     </div>
@@ -692,15 +681,15 @@ const Home = () => {
           aria-labelledby="cta-heading"
         >
           <motion.div
-            className="w-full max-w-4xl text-center p-8 sm:p-12 lg:p-16 rounded-2xl lg:rounded-3xl bg-gradient-to-br from-blue-600 to-purple-600 shadow-2xl relative overflow-hidden"
+            className="w-full max-w-4xl text-center p-8 sm:p-12 lg:p-16 rounded-2xl lg:rounded-3xl bg-gradient-to-br from-teal-500 to-cyan-500 shadow-2xl relative overflow-hidden"
             initial={{ scale: 0.9, y: 50 }}
             whileInView={{ scale: 1, y: 0 }}
             viewport={{ once: true }}
             transition={{ type: "spring", stiffness: 100 }}
           >
             <motion.div
-              className="absolute inset-0 bg-gradient-to-br from-purple-600 to-pink-600 opacity-0 hover:opacity-100 transition-opacity"
-              animate={{ scale: [1, 1.1, 1], rotate: [0, 5, 0] }}
+              className="absolute inset-0 bg-gradient-to-br from-cyan-500 to-teal-400 opacity-0 hover:opacity-100 transition-opacity"
+              animate={reducedMotion ? {} : { scale: [1, 1.1, 1], rotate: [0, 5, 0] }}
               transition={{ duration: 5, repeat: Infinity }}
               aria-hidden="true"
             />
@@ -717,7 +706,7 @@ const Home = () => {
                 something extraordinary. 
               </p>
               <motion.button
-                className="inline-flex items-center gap-2 px-8 lg:px-10 py-4 lg:py-5 rounded-xl lg:rounded-2xl bg-white text-gray-900 font-bold text-base lg:text-lg shadow-xl hover:shadow-2xl transition-all focus:outline-none focus:ring-4 focus:ring-white/50"
+                className="inline-flex items-center gap-2 px-8 lg:px-10 py-4 lg:py-5 rounded-xl lg:rounded-2xl bg-primary text-teal-400 font-bold text-base lg:text-lg shadow-xl hover:shadow-2xl transition-all focus:outline-none focus:ring-4 focus:ring-primary/50"
                 whileHover={{ scale: 1.05, y: -3 }}
                 whileTap={{ scale: 0.95 }}
                 aria-label="Get in touch with me"

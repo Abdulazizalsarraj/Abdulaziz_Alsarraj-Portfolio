@@ -1,17 +1,56 @@
 import { motion, useInView, useAnimation, AnimatePresence } from 'framer-motion';
-import { useRef, useEffect, useState } from 'react';
+import { useRef, useEffect, useState, memo, lazy, Suspense } from 'react';
+import useReducedMotion from '../../hooks/useReducedMotion';
+import useIsMobile from '../../hooks/useIsMobile';
+import { Helmet } from 'react-helmet-async';
 import { useTheme } from '../../hooks/useTheme';
 import { FiGithub, FiLinkedin, FiMail, FiMapPin, FiPhone, FiSend, FiCheck } from 'react-icons/fi';
 import { FaTelegramPlane, FaInstagram } from 'react-icons/fa';
-import emailjs from 'emailjs-com';
-import { toast, ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+// emailjs و toastify يُحمَّلان فقط عند الحاجة (lazy) لتقليل الـ bundle الأولي
+let emailjsLoaded = null;
+let toastifyLoaded = null;
+
+const getEmailjs = () => {
+  if (!emailjsLoaded) emailjsLoaded = import('emailjs-com');
+  return emailjsLoaded;
+};
+
+const getToastify = () => {
+  if (!toastifyLoaded) toastifyLoaded = import('react-toastify');
+  return toastifyLoaded;
+};
+
+const CONTACT_PARTICLES_DESKTOP = Array.from({ length: 15 }, (_, i) => ({
+  id: i,
+  left: `${(i * 6.8 + 4.2) % 100}%`,
+  top: `${(i * 9.3 + 1.6) % 100}%`,
+  duration: 4 + (i % 5) * 0.6,
+  delay: (i % 8) * 0.25,
+  xOffset: (i % 2 === 0 ? 1 : -1) * (10 + (i % 5) * 5),
+}));
+
+const CONTACT_PARTICLES_MOBILE = Array.from({ length: 5 }, (_, i) => ({
+  id: i,
+  left: `${(i * 20 + 10) % 100}%`,
+  top: `${(i * 17 + 8) % 100}%`,
+  duration: 4 + (i % 3) * 0.5,
+  delay: i * 0.3,
+  xOffset: (i % 2 === 0 ? 1 : -1) * 15,
+}));
+
+const LazyToastContainer = lazy(() =>
+  import('react-toastify').then((m) => ({ default: m.ToastContainer }))
+);
 
 const Contact = () => {
   const { theme } = useTheme();
+  const reducedMotion = useReducedMotion();
+  const isMobile = useIsMobile();
+  const contactParticles = isMobile ? CONTACT_PARTICLES_MOBILE : CONTACT_PARTICLES_DESKTOP;
   const ref = useRef(null);
-  const isInView = useInView(ref, { once: false, margin: '-100px' });
+  const isInView = useInView(ref, { once: true, margin: '-100px' });
   const controls = useAnimation();
+  const [showToast, setShowToast] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState('');
@@ -23,26 +62,26 @@ const Contact = () => {
       icon: <FiMail />, 
       url: 'mailto:abdulazizalsarraj77@gmail.com',
       label: 'Email',
-      color: 'from-gray-600 to-gray-900'
+      color: 'from-teal-400 to-teal-600'
     },
-  
-    { 
-      icon: <FiLinkedin />, 
+
+    {
+      icon: <FiLinkedin />,
       url: 'https://www.linkedin.com/in/abdulaziz-alsarraj-4a6920355',
       label: 'LinkedIn',
-      color: 'from-blue-600 to-blue-900'
+      color: 'from-teal-400 to-cyan-500'
     },
-    { 
-      icon: <FaTelegramPlane />, 
+    {
+      icon: <FaTelegramPlane />,
       url: 'https://t.me/Abdulaziz_Alsarraj',
       label: 'Telegram',
-      color: 'from-blue-400 to-blue-700'
+      color: 'from-cyan-400 to-teal-500'
     },
-    { 
-      icon: <FiGithub />, 
+    {
+      icon: <FiGithub />,
       url: 'https://github.com/Abdulazizalsarraj',
       label: 'GitHub',
-      color: 'from-gray-600 to-gray-900'
+      color: 'from-teal-500 to-cyan-400'
     },
     { 
       icon: <FaInstagram />, 
@@ -82,16 +121,18 @@ const Contact = () => {
     e.preventDefault();
     setIsLoading(true);
 
+    setShowToast(true);
     try {
+      const [{ default: emailjs }, { toast }] = await Promise.all([
+        getEmailjs(),
+        getToastify(),
+      ]);
+
       await emailjs.send(
-        'service_q6rm8r8',
-        'template_d064uml',
-        {
-          name: name,
-          email: email,
-          message: message
-        },
-        'A3vMZF026Ue4EY9hT'
+        import.meta.env.VITE_EMAILJS_SERVICE_ID,
+        import.meta.env.VITE_EMAILJS_TEMPLATE_ID,
+        { name, email, message },
+        import.meta.env.VITE_EMAILJS_PUBLIC_KEY
       );
 
       toast.success('🎉 Message sent successfully! I\'ll get back to you soon.', {
@@ -109,6 +150,7 @@ const Contact = () => {
       setMessage('');
     } catch (error) {
       console.error('FAILED...', error);
+      const { toast } = await getToastify();
       toast.error('😢 Failed to send message. Please try again.', {
         position: "top-center",
         autoClose: 4000,
@@ -175,56 +217,53 @@ const Contact = () => {
 
   return (
     <motion.div
-      className="min-h-screen relative bg-primary dark:bg-primary-dark py-20 px-4 sm:px-6 lg:px-24 mt-20"
+      className="min-h-screen relative bg-primary py-20 px-4 sm:px-6 lg:px-24 mt-20"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
     >
-      <ToastContainer />
+      <Helmet>
+        <title>Contact | Abdulaziz Alsarraj</title>
+        <meta name="description" content="Get in touch with Abdulaziz Alsarraj — frontend developer available for freelance projects, collaborations and job opportunities." />
+        <meta name="keywords" content="Contact, Frontend Developer, Hire, Freelance, Collaboration, Email" />
+        <meta property="og:title" content="Contact | Abdulaziz Alsarraj" />
+        <meta property="og:description" content="Reach out to Abdulaziz Alsarraj for projects, collaborations or just to say hello." />
+        <link rel="canonical" href="https://abdulazizalsarraj.dev/contact" />
+      </Helmet>
+      {showToast && (
+        <Suspense fallback={null}>
+          <LazyToastContainer />
+        </Suspense>
+      )}
 
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
-          className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-blue-500/20 to-purple-500/20 rounded-full blur-3xl"
-          animate={{
-            x: [0, 30, -30, 0],
-            y: [0, -30, 30, 0],
-          }}
+          className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-teal-400/15 to-cyan-400/15 rounded-full blur-3xl"
+          animate={reducedMotion ? {} : { x: [0, 30, -30, 0], y: [0, -30, 30, 0] }}
           transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut' }}
         />
         <motion.div
-          className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-purple-500/20 to-blue-500/20 rounded-full blur-3xl"
-          animate={{
-            x: [0, -30, 30, 0],
-            y: [0, 30, -30, 0],
-          }}
+          className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-cyan-400/15 to-teal-400/15 rounded-full blur-3xl"
+          animate={reducedMotion ? {} : { x: [0, -30, 30, 0], y: [0, 30, -30, 0] }}
           transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }}
         />
       </div>
 
       {/* Floating Particles */}
-      <div className="absolute inset-0 pointer-events-none">
-        {[...Array(15)].map((_, index) => (
-          <motion.div
-            key={index}
-            className="absolute w-1 h-1 rounded-full bg-gradient-to-r from-blue-400 to-purple-400"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-            }}
-            animate={{
-              y: [0, -100, 0],
-              opacity: [0, 1, 0],
-              x: [0, Math.random() * 50 - 25, 0],
-            }}
-            transition={{
-              duration: 4 + Math.random() * 3,
-              repeat: Infinity,
-              delay: Math.random() * 2,
-            }}
-          />
-        ))}
-      </div>
+      {!reducedMotion && (
+        <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+          {contactParticles.map((p) => (
+            <motion.div
+              key={p.id}
+              className="absolute w-1 h-1 rounded-full bg-gradient-to-r from-teal-400 to-cyan-400"
+              style={{ left: p.left, top: p.top }}
+              animate={{ y: [0, -100, 0], opacity: [0, 1, 0], x: [0, p.xOffset, 0] }}
+              transition={{ duration: p.duration, repeat: Infinity, delay: p.delay }}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Main Content */}
       <div className="relative z-10 max-w-7xl mx-auto">
@@ -239,8 +278,8 @@ const Contact = () => {
             className="inline-block mb-6"
             whileHover={{ scale: 1.05 }}
           >
-            <div className="px-4 py-2 rounded-full bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/30 dark:border-purple-500/30 backdrop-blur-md">
-              <p className="text-sm font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            <div className="px-4 py-2 rounded-full bg-teal-400/10 border border-teal-400/30 backdrop-blur-md">
+              <p className="text-sm font-semibold bg-gradient-to-r from-teal-400 to-cyan-400 bg-clip-text text-transparent">
                 ✨ Get In Touch
               </p>
             </div>
@@ -252,13 +291,13 @@ const Contact = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2, duration: 0.8 }}
           >
-            <span className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-teal-400 via-cyan-400 to-teal-300 bg-clip-text text-transparent">
               Let's Connect
             </span>
           </motion.h1>
 
           <motion.p
-            className="text-lg sm:text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto"
+            className="text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.8 }}
@@ -286,23 +325,23 @@ const Contact = () => {
                   whileHover="hover"
                   className="block group"
                 >
-                  <div className="relative p-6 rounded-2xl bg-gradient-to-br from-white/5 to-white/10 dark:from-black/20 dark:to-black/10 backdrop-blur-xl border border-white/20 dark:border-white/10 hover:border-blue-500/50 dark:hover:border-purple-500/50 transition-all duration-300 overflow-hidden">
+                  <div className="relative p-6 rounded-2xl bg-secondary/40 backdrop-blur-sm border border-teal-400/10 hover:border-teal-400/40 transition-all duration-300 overflow-hidden">
                     {/* Gradient Overlay on Hover */}
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-500/0 to-purple-500/0 group-hover:from-blue-500/10 group-hover:to-purple-500/10 transition-all duration-300" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-teal-400/0 to-cyan-400/0 group-hover:from-teal-400/10 group-hover:to-cyan-400/10 transition-all duration-300" />
 
                     <div className="relative z-10 flex items-start gap-4">
                       <motion.div
-                        className="p-3 rounded-xl bg-gradient-to-br from-blue-500/20 to-purple-500/20 text-blue-600 dark:text-purple-400 flex-shrink-0"
+                        className="p-3 rounded-xl bg-teal-400/10 text-teal-400 flex-shrink-0"
                         whileHover={{ rotate: 360, scale: 1.1 }}
                         transition={{ duration: 0.6 }}
                       >
                         {item.icon}
                       </motion.div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400 mb-1">
+                        <p className="text-sm font-medium text-gray-500 mb-1">
                           {item.label}
                         </p>
-                        <p className="text-gray-900 dark:text-white font-semibold break-all">
+                        <p className="text-gray-200 font-semibold break-all">
                           {item.value}
                         </p>
                       </div>
@@ -319,7 +358,7 @@ const Contact = () => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.4, duration: 0.8 }}
             >
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-6">
+              <h3 className="text-lg font-semibold text-white mb-6">
                 Connect With Me
               </h3>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -339,13 +378,13 @@ const Contact = () => {
                     title={link.label}
                   >
                     <div className={`absolute inset-0 rounded-2xl bg-gradient-to-r ${link.color} opacity-0 group-hover:opacity-20 blur-lg transition-all duration-300`} />
-                    <div className="relative p-4 rounded-2xl bg-gradient-to-br from-white/10 to-white/5 dark:from-black/30 dark:to-black/20 backdrop-blur-xl border border-white/20 dark:border-white/10 group-hover:border-white/40 dark:group-hover:border-white/20 transition-all duration-300">
-                      <span className="text-2xl text-gray-700 dark:text-gray-300 group-hover:text-blue-600 dark:group-hover:text-purple-400 transition-colors duration-300">
+                    <div className="relative p-4 rounded-2xl bg-gradient-to-br from-white/10 to-white/5 dark:from-black/30 dark:to-black/20 backdrop-blur-sm border border-white/20 dark:border-white/10 group-hover:border-white/40 dark:group-hover:border-white/20 transition-all duration-300">
+                      <span className="text-2xl text-gray-300 group-hover:text-teal-400 transition-colors duration-300">
                         {link.icon}
                       </span>
                     </div>
                     <motion.p
-                      className="mt-2 text-xs font-medium text-gray-600 dark:text-gray-400 text-center"
+                      className="mt-2 text-xs font-medium text-gray-400 text-center"
                       initial={{ opacity: 0, y: 5 }}
                       whileHover={{ opacity: 1, y: 0 }}
                     >
@@ -366,10 +405,10 @@ const Contact = () => {
           >
             <div className="relative">
               {/* Animated Border Gradient */}
-              <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-blue-500/20 via-purple-500/20 to-pink-500/20 opacity-0 group-hover:opacity-100 blur transition-opacity duration-500" />
+              <div className="absolute inset-0 rounded-3xl bg-gradient-to-br from-teal-400/15 via-cyan-400/15 to-teal-300/15 opacity-0 group-hover:opacity-100 blur transition-opacity duration-500" />
 
-              <div className="relative p-8 sm:p-10 rounded-3xl bg-gradient-to-br from-white/5 to-white/10 dark:from-black/30 dark:to-black/20 backdrop-blur-xl border border-white/20 dark:border-white/10 hover:border-white/40 dark:hover:border-white/20 transition-all duration-300">
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-8">
+              <div className="relative p-8 sm:p-10 rounded-3xl bg-secondary/40 backdrop-blur-sm border border-teal-400/10 hover:border-teal-400/30 transition-all duration-300">
+                <h3 className="text-2xl font-bold text-white mb-8">
                   Send Me a Message
                 </h3>
 
@@ -381,7 +420,7 @@ const Contact = () => {
                 >
                   {/* Name Input */}
                   <motion.div variants={itemVariants} className="space-y-3">
-                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 block">
+                    <label className="text-sm font-semibold text-gray-300 block">
                       Your Name *
                     </label>
                     <motion.div
@@ -395,10 +434,10 @@ const Contact = () => {
                         onFocus={() => setFocusedField('name')}
                         onBlur={() => setFocusedField(null)}
                         placeholder="John Doe"
-                        className={`w-full px-5 py-4 rounded-xl bg-white/5 dark:bg-black/20 border-2 transition-all duration-300 focus:outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 ${
+                        className={`w-full px-5 py-4 rounded-xl bg-secondary/50 border-2 transition-all duration-300 focus:outline-none text-white placeholder-gray-500 ${
                           focusedField === 'name'
-                            ? 'border-blue-500 dark:border-purple-500 shadow-lg shadow-blue-500/20'
-                            : 'border-white/10 dark:border-white/5 hover:border-white/20 dark:hover:border-white/10'
+                            ? 'border-teal-400 shadow-lg shadow-teal-400/20'
+                            : 'border-white/10 hover:border-teal-400/30'
                         }`}
                         required
                       />
@@ -407,7 +446,7 @@ const Contact = () => {
 
                   {/* Email Input */}
                   <motion.div variants={itemVariants} className="space-y-3">
-                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 block">
+                    <label className="text-sm font-semibold text-gray-300 block">
                       Your Email *
                     </label>
                     <motion.div
@@ -421,10 +460,10 @@ const Contact = () => {
                         onFocus={() => setFocusedField('email')}
                         onBlur={() => setFocusedField(null)}
                         placeholder="your@email.com"
-                        className={`w-full px-5 py-4 rounded-xl bg-white/5 dark:bg-black/20 border-2 transition-all duration-300 focus:outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 ${
+                        className={`w-full px-5 py-4 rounded-xl bg-secondary/50 border-2 transition-all duration-300 focus:outline-none text-white placeholder-gray-500 ${
                           focusedField === 'email'
-                            ? 'border-blue-500 dark:border-purple-500 shadow-lg shadow-blue-500/20'
-                            : 'border-white/10 dark:border-white/5 hover:border-white/20 dark:hover:border-white/10'
+                            ? 'border-teal-400 shadow-lg shadow-teal-400/20'
+                            : 'border-white/10 hover:border-teal-400/30'
                         }`}
                         required
                       />
@@ -433,7 +472,7 @@ const Contact = () => {
 
                   {/* Message Textarea */}
                   <motion.div variants={itemVariants} className="space-y-3">
-                    <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 block">
+                    <label className="text-sm font-semibold text-gray-300 block">
                       Message *
                     </label>
                     <motion.div
@@ -447,10 +486,10 @@ const Contact = () => {
                         onFocus={() => setFocusedField('message')}
                         onBlur={() => setFocusedField(null)}
                         placeholder="Tell me about your project or ideas..."
-                        className={`w-full px-5 py-4 rounded-xl bg-white/5 dark:bg-black/20 border-2 transition-all duration-300 focus:outline-none text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-600 resize-none ${
+                        className={`w-full px-5 py-4 rounded-xl bg-secondary/50 border-2 transition-all duration-300 focus:outline-none text-white placeholder-gray-500 resize-none ${
                           focusedField === 'message'
-                            ? 'border-blue-500 dark:border-purple-500 shadow-lg shadow-blue-500/20'
-                            : 'border-white/10 dark:border-white/5 hover:border-white/20 dark:hover:border-white/10'
+                            ? 'border-teal-400 shadow-lg shadow-teal-400/20'
+                            : 'border-white/10 hover:border-teal-400/30'
                         }`}
                         required
                       />
@@ -466,11 +505,11 @@ const Contact = () => {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl opacity-100 group-hover/btn:opacity-90 transition-opacity duration-300" />
-                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 opacity-0 group-hover/btn:opacity-100 blur-lg transition-opacity duration-300" />
+                    <div className="absolute inset-0 bg-gradient-to-r from-teal-400 to-cyan-400 rounded-xl opacity-100 group-hover/btn:opacity-90 transition-opacity duration-300" />
+                    <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-teal-400 via-cyan-400 to-teal-300 opacity-0 group-hover/btn:opacity-100 blur-lg transition-opacity duration-300" />
 
                     <motion.div
-                      className="relative px-6 py-4 rounded-xl flex items-center justify-center gap-2 text-white font-semibold"
+                      className="relative px-6 py-4 rounded-xl flex items-center justify-center gap-2 text-slate-900 font-semibold"
                       animate={isLoading ? { opacity: 0.7 } : { opacity: 1 }}
                     >
                       <AnimatePresence mode="wait">
@@ -505,21 +544,21 @@ const Contact = () => {
 
         {/* Bottom CTA */}
         <motion.div
-          className="mt-20 p-8 rounded-3xl bg-gradient-to-r from-blue-500/10 to-purple-500/10 border border-blue-500/30 dark:border-purple-500/30 backdrop-blur-lg text-center"
+          className="mt-20 p-8 rounded-3xl bg-teal-400/5 border border-teal-400/20 backdrop-blur-lg text-center"
           initial={{ opacity: 0, y: 50 }}
           whileInView={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8 }}
-          viewport={{ once: false, margin: '-100px' }}
+          viewport={{ once: true, margin: '-100px' }}
         >
-          <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+          <h3 className="text-2xl font-bold text-white mb-3">
             Prefer a different way to connect?
           </h3>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">
+          <p className="text-gray-400 mb-6">
             You can also reach out via my social media channels or contact me directly at the details above.
           </p>
           <motion.button
             onClick={() => window.open('mailto:abdulazizalsarraj77@gmail.com')}
-            className="px-8 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold hover:shadow-lg hover:shadow-blue-500/30 transition-all duration-300"
+            className="px-8 py-3 rounded-xl bg-gradient-to-r from-teal-400 to-cyan-400 text-slate-900 font-semibold hover:shadow-lg hover:shadow-teal-400/30 transition-all duration-300"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >

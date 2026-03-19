@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:vite.dev)",
+      "Bash(gh api repos/expo/expo/contents/packages/expo/assets/expo-icon.svg --jq '.content')",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:abdalghanidakkak.netlify.app)",
+      "Bash(npm install @tsparticles/react @tsparticles/slim)",
+      "Bash(npm run build)",
+      "Bash(node -e \":*)",
+      "Bash(magick \"d:/React Projects/Create a small website/Portfolio/module_projext/src/assets/images/linkedInprofile.png\" -quality 82 \"d:/React Projects/Create a small website/Portfolio/module_projext/src/assets/images/linkedInprofile.webp\")",
+      "Bash(npm install sharp --save-dev)",
+      "Bash(npm list sharp)",
+      "Bash(npm list canvas)",
+      "Bash(node -e \"require\\(''sharp''\\)\")",
+      "Bash(node -e \"require\\(''@resvg/resvg-js''\\)\")"
+    ]
+  }
+}

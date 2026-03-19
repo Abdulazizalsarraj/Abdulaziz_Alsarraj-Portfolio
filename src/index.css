@@ -2,84 +2,126 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ================================================
+   Base styles
+   ================================================ */
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    scroll-behavior: smooth;
+  }
+
+  body {
+    overflow-x: hidden;
+  }
+
+  /* Enforce font-display:swap for Inter (in case browser ignores Google Fonts value) */
+  @font-face {
+    font-family: 'Inter';
+    font-display: swap;
+  }
+
+  /* CSS-level prefers-reduced-motion fallback — covers Tailwind CSS animations
+     (animate-ping, animate-spin, animate-pulse) that JS hooks don't reach */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/* ================================================
+   Component utilities
+   ================================================ */
 @layer components {
+  /* Existing utilities */
   .shadow-glass {
-    box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+    box-shadow: 0 8px 32px 0 rgba(0, 211, 189, 0.08);
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
   }
-  
+
   .hero-button {
-    @apply px-8 py-4 rounded-full font-medium transition-all 
-           duration-300 transform hover:scale-105 
+    @apply px-8 py-4 rounded-full font-medium transition-all
+           duration-300 transform hover:scale-105
            flex items-center gap-2;
   }
 
   .tech-badge {
     @apply px-4 py-2 rounded-full border transition-colors;
   }
+
+  /* Glass card — consistent hover glow across About/Contact/Projects */
+  .glass-card {
+    @apply bg-secondary/60 backdrop-blur-md border border-white/10
+           hover:border-teal-400/30 transition-all duration-300;
+    box-shadow: 0 4px 24px rgba(0, 211, 189, 0.06);
+  }
+
+  .glass-card:hover {
+    box-shadow: 0 8px 40px rgba(0, 211, 189, 0.12);
+  }
+
+  /* Shimmer skeleton — used for loading placeholders */
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      rgba(17, 17, 17, 0.8) 25%,
+      rgba(0, 211, 189, 0.08) 50%,
+      rgba(17, 17, 17, 0.8) 75%
+    );
+    background-size: 200% 100%;
+    animation: shimmer 2s linear infinite;
+  }
 }
 
+/* ================================================
+   Keyframes
+   ================================================ */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
 
-
- /* تغيير لون scrollbar */
+/* ================================================
+   Scrollbar styling
+   ================================================ */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #3b82f6 #f1f1f1;
+  scrollbar-color: #00d3bd #0a0a0a;
 }
 
-/* متصفحات WebKit (Chrome, Safari, Edge) */
 ::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #f1f1f1;
+  background: #0a0a0a;
   border-radius: 5px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #3b82f6;
+  background: #00d3bd;
   border-radius: 5px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #2563eb;
+  background: #00baa7;
 }
 
-/* للوضع الداكن (Dark Mode) */
 @media (prefers-color-scheme: dark) {
-  * {
-    scrollbar-color: #8b5cf6 #1f2937;
-  }
-  
-  ::-webkit-scrollbar-track {
-    background: #1f2937;
-  }
-  
-  ::-webkit-scrollbar-thumb {
-    background: #8b5cf6;
-  }
-  
-  ::-webkit-scrollbar-thumb:hover {
-    background: #7c3aed;
-  }
+  * { scrollbar-color: #00d3bd #0a0a0a; }
+  ::-webkit-scrollbar-track { background: #0a0a0a; }
+  ::-webkit-scrollbar-thumb { background: #00d3bd; }
+  ::-webkit-scrollbar-thumb:hover { background: #00baa7; }
 }
 
-/* أو باستخدام classes للوضع الداكن إذا كنت تستخدم toggle */
-.dark * {
-  scrollbar-color: #8b5cf6 #1f2937;
-}
-
-.dark ::-webkit-scrollbar-track {
-  background: #1f2937;
-}
-
-.dark ::-webkit-scrollbar-thumb {
-  background: #8b5cf6;
-}
-
-.dark ::-webkit-scrollbar-thumb:hover {
-  background: #7c3aed;
-}
+.dark * { scrollbar-color: #00d3bd #0a0a0a; }
+.dark ::-webkit-scrollbar-track { background: #0a0a0a; }
+.dark ::-webkit-scrollbar-thumb { background: #00d3bd; }
+.dark ::-webkit-scrollbar-thumb:hover { background: #00baa7; }
