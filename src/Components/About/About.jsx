@@ -1,5 +1,5 @@
 import { motion, useInView, useAnimation } from 'framer-motion';
-import { useRef, useEffect, useState, useMemo, memo } from 'react';
+import { useRef, useEffect, useState, useMemo, memo, useCallback } from 'react';
 import useReducedMotion from '../../hooks/useReducedMotion';
 import useIsMobile from '../../hooks/useIsMobile';
 import { Helmet } from 'react-helmet-async';
@@ -43,16 +43,18 @@ const ABOUT_PARTICLES_MOBILE = Array.from({ length: 6 }, (_, i) => ({
 const ParticleBackground = memo(() => {
   const reducedMotion = useReducedMotion();
   const isMobile = useIsMobile();
+  const ref = useRef(null);
+  const isInView = useInView(ref, { amount: 0.05 });
   const particles = isMobile ? ABOUT_PARTICLES_MOBILE : ABOUT_PARTICLES_DESKTOP;
   if (reducedMotion) return null;
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+    <div ref={ref} className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
       {particles.map((p) => (
         <motion.div
           key={p.id}
           className="absolute w-1 h-1 bg-accent dark:bg-accent-dark rounded-full"
           style={{ left: p.left, top: p.top }}
-          animate={{ y: [0, -30, 0], opacity: [0, 1, 0] }}
+          animate={isInView ? { y: [0, -30, 0], opacity: [0, 1, 0] } : { opacity: 0 }}
           transition={{ duration: p.duration, repeat: Infinity, delay: p.delay }}
         />
       ))}
@@ -63,11 +65,14 @@ const ParticleBackground = memo(() => {
 // بديل CSS احترافي عن Three.js Canvas
 const HeroVisual = memo(({ theme }) => {
   const reducedMotion = useReducedMotion();
+  const ref = useRef(null);
+  const isInView = useInView(ref, { amount: 0.1 });
   const accent = '#00d3bd';
   const accent2 = '#00d2ef';
+  const animate = isInView && !reducedMotion;
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center" aria-hidden="true">
+    <div ref={ref} className="relative w-full h-full flex items-center justify-center" aria-hidden="true">
       {/* Glow backgrounds */}
       <div
         className="absolute inset-0 rounded-3xl opacity-30"
@@ -78,7 +83,7 @@ const HeroVisual = memo(({ theme }) => {
       <motion.div
         className="absolute w-72 h-72 sm:w-80 sm:h-80 lg:w-96 lg:h-96 rounded-full border-2 opacity-30"
         style={{ borderColor: accent }}
-        animate={reducedMotion ? {} : { rotate: 360 }}
+        animate={animate ? { rotate: 360 } : {}}
         transition={{ duration: 20, repeat: Infinity, ease: 'linear' }}
       />
 
@@ -86,18 +91,18 @@ const HeroVisual = memo(({ theme }) => {
       <motion.div
         className="absolute w-52 h-52 sm:w-60 sm:h-60 lg:w-72 lg:h-72 rounded-full border-2 border-dashed opacity-20"
         style={{ borderColor: accent2 }}
-        animate={reducedMotion ? {} : { rotate: -360 }}
+        animate={animate ? { rotate: -360 } : {}}
         transition={{ duration: 14, repeat: Infinity, ease: 'linear' }}
       />
 
-      {/* Center glowing orb */}
+      {/* Center glowing orb — static boxShadow, only scale animates */}
       <motion.div
         className="relative w-36 h-36 sm:w-44 sm:h-44 lg:w-52 lg:h-52 rounded-full flex items-center justify-center"
         style={{
           background: `radial-gradient(circle at 35% 35%, ${accent2}, ${accent})`,
           boxShadow: `0 0 60px ${accent}80, 0 0 120px ${accent}30`,
         }}
-        animate={reducedMotion ? {} : { scale: [1, 1.06, 1], boxShadow: [`0 0 60px ${accent}80`, `0 0 90px ${accent}cc`, `0 0 60px ${accent}80`] }}
+        animate={animate ? { scale: [1, 1.06, 1] } : {}}
         transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
       >
         {/* Wireframe lines */}
@@ -113,12 +118,12 @@ const HeroVisual = memo(({ theme }) => {
       </motion.div>
 
       {/* Orbiting dots */}
-      {!reducedMotion && [0, 60, 120, 180, 240, 300].map((deg, i) => (
+      {[0, 60, 120, 180, 240, 300].map((deg, i) => (
         <motion.div
           key={i}
           className="absolute w-2.5 h-2.5 rounded-full"
           style={{ background: i % 2 === 0 ? accent : accent2 }}
-          animate={{ rotate: 360 }}
+          animate={animate ? { rotate: 360 } : {}}
           transition={{ duration: 10 + i * 2, repeat: Infinity, ease: 'linear' }}
           initial={{ rotate: deg }}
         >
@@ -148,7 +153,7 @@ const HeroVisual = memo(({ theme }) => {
             translateX: badge.x,
             translateY: badge.y,
           }}
-          animate={reducedMotion ? {} : { y: [0, -8, 0] }}
+          animate={animate ? { y: [0, -8, 0] } : {}}
           transition={{ duration: badge.dur, repeat: Infinity, delay: badge.delay, ease: 'easeInOut' }}
         >
           {badge.label}
@@ -226,6 +231,33 @@ const FRONTEND_SKILLS = [
   { icon: WebpackIcon, name: 'Webpack' },
   { icon: ThreejsIcon, name: 'Three.js', darkInvert: true },
 ];
+
+const SkillCard = memo(({ skill, index, controls }) => (
+  <motion.div
+    className="group relative p-6 sm:p-8 rounded-3xl bg-secondary/80 dark:bg-secondary-dark/80 border border-accent/10 dark:border-accent-dark/10 flex flex-col items-center justify-center overflow-hidden"
+    variants={{
+      hidden: { opacity: 0, scale: 0.5, y: 50 },
+      visible: { opacity: 1, scale: 1, y: 0 },
+    }}
+    initial="hidden"
+    animate={controls}
+    transition={{ type: 'spring', stiffness: 100, damping: 15, delay: index * 0.08 }}
+    whileHover={{ scale: 1.12, transition: { duration: 0.25 } }}
+  >
+    <div className="absolute inset-0 bg-gradient-to-br from-accent/20 to-blue-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+    <img
+      src={skill.icon}
+      alt={skill.name}
+      width="64"
+      height="64"
+      className={`w-12 h-12 sm:w-16 sm:h-16 mb-3 relative z-10 ${skill.darkInvert ? 'dark:invert' : ''}`}
+      loading="lazy"
+    />
+    <span className="text-xs sm:text-sm font-semibold text-text dark:text-text-dark opacity-60 group-hover:opacity-100 transition-opacity duration-300 relative z-10">
+      {skill.name}
+    </span>
+  </motion.div>
+));
 
 const About = () => {
   const { theme } = useTheme();
@@ -366,7 +398,7 @@ const About = () => {
             return (
               <motion.div
                 key={item.title}
-                className="group relative p-8 rounded-3xl bg-secondary dark:bg-secondary-dark backdrop-blur-lg border border-accent/10 dark:border-accent-dark/10 overflow-hidden"
+                className="group relative p-8 rounded-3xl bg-secondary/80 dark:bg-secondary-dark/80 border border-accent/10 dark:border-accent-dark/10 overflow-hidden"
                 initial={{ opacity: 0, y: 50 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
@@ -421,31 +453,7 @@ const About = () => {
           ref={ref}
         >
           {FRONTEND_SKILLS.map((skill, index) => (
-            <motion.div
-              key={skill.name}
-              className="group relative p-6 sm:p-8 rounded-3xl bg-secondary dark:bg-secondary-dark backdrop-blur-lg border border-accent/10 dark:border-accent-dark/10 flex flex-col items-center justify-center overflow-hidden"
-              variants={{
-                hidden: { opacity: 0, scale: 0.5, y: 50 },
-                visible: { opacity: 1, scale: 1, y: 0 },
-              }}
-              initial="hidden"
-              animate={controls}
-              transition={{ type: 'spring', stiffness: 100, damping: 15, delay: index * 0.08 }}
-              whileHover={{ scale: 1.12, transition: { duration: 0.25 } }}
-            >
-              <div className="absolute inset-0 bg-gradient-to-br from-accent/20 to-blue-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-              <img
-                src={skill.icon}
-                alt={skill.name}
-                width="64"
-                height="64"
-                className={`w-12 h-12 sm:w-16 sm:h-16 mb-3 relative z-10 ${skill.darkInvert ? 'dark:invert' : ''}`}
-                loading="lazy"
-              />
-              <span className="text-xs sm:text-sm font-semibold text-text dark:text-text-dark opacity-60 group-hover:opacity-100 transition-opacity duration-300 relative z-10">
-                {skill.name}
-              </span>
-            </motion.div>
+            <SkillCard key={skill.name} skill={skill} index={index} controls={controls} />
           ))}
         </motion.div>
       </div>

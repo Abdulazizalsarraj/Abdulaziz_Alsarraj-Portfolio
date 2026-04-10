@@ -81,7 +81,7 @@ const ProjectCard = memo(({ project, index }) => {
                   <img
                     src={project.image}
                     alt={project.title}
-                    className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+                    className="w-full h-full object-cover transition-transform duration-300 ease-out group-hover:scale-105"
                     loading="lazy"
                     decoding="async"
                     width="800"

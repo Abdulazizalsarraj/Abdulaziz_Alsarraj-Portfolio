@@ -1,5 +1,5 @@
-import { Suspense, memo } from "react";
-import { Canvas } from "@react-three/fiber";
+import { Suspense, memo, useRef, useEffect, useState } from "react";
+import { Canvas, useFrame } from "@react-three/fiber";
 import { OrbitControls, Stars, Float, Sphere } from "@react-three/drei";
 
 const AnimatedSphere = memo(() => {
@@ -25,12 +25,11 @@ const Scene3D = memo(({ accentColor }) => (
   <Suspense fallback={null}>
     <ambientLight intensity={0.5} />
     <pointLight position={[10, 10, 10]} intensity={1.2} color={accentColor} />
-    {/* FIX: removed second pointLight — one is sufficient for wireframe */}
-    {/* FIX: stars reduced from 1000 → 400, speed reduced from 0.8 → 0.5 */}
+    {/* FIX: stars reduced from 400 → 200 */}
     <Stars
       radius={100}
       depth={50}
-      count={400}
+      count={200}
       factor={4}
       saturation={0}
       fade
@@ -46,16 +45,38 @@ const Scene3D = memo(({ accentColor }) => (
   </Suspense>
 ));
 
-const ThreeBackground = memo(({ accentColor }) => (
-  // FIX: dpr fixed at 1 instead of [1, 1.5] — no quality difference on wireframe
-  <Canvas
-    camera={{ position: [0, 0, 8], fov: 50 }}
-    dpr={1}
-    performance={{ min: 0.5 }}
-    gl={{ alpha: true, powerPreference: 'low-power' }}
-  >
-    <Scene3D accentColor={accentColor} />
-  </Canvas>
-));
+const ThreeBackground = memo(({ accentColor }) => {
+  const containerRef = useRef(null);
+  const [isVisible, setIsVisible] = useState(true);
+
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsVisible(entry.isIntersecting),
+      { threshold: 0.01 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
+      {/* FIX: frameloop="demand" stops continuous 60fps rendering when scene is static */}
+      {/* FIX: pause canvas entirely when scrolled off-screen */}
+      {isVisible && (
+        <Canvas
+          camera={{ position: [0, 0, 8], fov: 50 }}
+          dpr={1}
+          frameloop="always"
+          performance={{ min: 0.5 }}
+          gl={{ alpha: true, powerPreference: 'low-power' }}
+        >
+          <Scene3D accentColor={accentColor} />
+        </Canvas>
+      )}
+    </div>
+  );
+});
 
 export default ThreeBackground;

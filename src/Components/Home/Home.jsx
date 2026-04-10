@@ -1,6 +1,6 @@
 /** @format */
 
-import { motion, useScroll, useTransform, useSpring, useInView } from "framer-motion";
+import { motion, useInView } from "framer-motion";
 import { useRef, useState, useEffect, useMemo, Suspense, memo, lazy } from "react";
 
 const ThreeBackground = lazy(() => import('./ThreeBackground'));
@@ -156,16 +156,18 @@ const HOME_PARTICLES_MOBILE = Array.from({ length: 3 }, (_, i) => ({
 const FloatingParticles = memo(() => {
   const reducedMotion = useReducedMotion();
   const isMobile = useIsMobile();
+  const ref = useRef(null);
+  const isInView = useInView(ref, { amount: 0.1 });
   if (reducedMotion) return null;
   const particles = isMobile ? HOME_PARTICLES_MOBILE : HOME_PARTICLES_DESKTOP;
   return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
+    <div ref={ref} className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden="true">
       {particles.map((p) => (
         <motion.div
           key={p.id}
           className="absolute w-2 h-2 bg-teal-400/25 rounded-full"
           style={{ left: p.left, top: p.top }}
-          animate={{ y: [0, -25, 0] }}
+          animate={isInView ? { y: [0, -25, 0] } : {}}
           transition={{ duration: p.duration, repeat: Infinity, delay: p.delay, ease: 'easeInOut' }}
         />
       ))}
@@ -178,7 +180,6 @@ const Home = () => {
   const accentColor = "#00d3bd";
   const isMobile = useIsMobile();
   const reducedMotion = useReducedMotion();
-  const containerRef = useRef(null);
   const navigate = useNavigate();
 
   // FIX: Delay Three.js initialization by 800ms after mount so hero renders first
@@ -188,21 +189,6 @@ const Home = () => {
     const id = setTimeout(() => setShowThree(true), 800);
     return () => clearTimeout(id);
   }, [isMobile]);
-
-  const { scrollYProgress } = useScroll({
-    target: containerRef,
-    offset: ["start start", "end end"],
-  });
-
-  const smoothProgress = useSpring(scrollYProgress, {
-    stiffness: 100,
-    damping: 30,
-    restDelta: 0.001,
-  });
-
-  const opacity = useTransform(smoothProgress, [0, 0.3], [1, 0]);
-  const scale = useTransform(smoothProgress, [0, 0.3], [1, 0.95]);
-  const heroY = useTransform(smoothProgress, [0, 0.3], [0, -50]);
 
   const handleDownloadCV = () => {
     const link = document.createElement("a");
@@ -270,12 +256,11 @@ const Home = () => {
         Skip to main content
       </a>
 
-      <div ref={containerRef} className="relative z-10">
+      <div className="relative z-10">
         {/* ── Hero Section ── */}
         <motion.section
           id="main-content"
-          className="min-h-screen relative flex flex-col lg:flex-row items-center justify-between px-6 sm:px-8 lg:px-16 xl:px-24 pt-24 lg:pt-0 gap-8 lg:gap-12"
-          style={{ opacity, scale, y: heroY }}
+          className="min-h-screen relative flex flex-col lg:flex-row items-center justify-between px-6 sm:px-8 lg:px-16 xl:px-24 pt-24 lg:pt-24 gap-8 lg:gap-12"
         >
           <FloatingParticles />
 

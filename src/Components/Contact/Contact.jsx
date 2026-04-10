@@ -1,5 +1,5 @@
 import { motion, useInView, useAnimation, AnimatePresence } from 'framer-motion';
-import { useRef, useEffect, useState, memo, lazy, Suspense } from 'react';
+import { useRef, useEffect, useState, memo, lazy, Suspense, useCallback } from 'react';
 import useReducedMotion from '../../hooks/useReducedMotion';
 import useIsMobile from '../../hooks/useIsMobile';
 import { Helmet } from 'react-helmet-async';
@@ -215,9 +215,12 @@ const Contact = () => {
     }
   };
 
+  const bgRef = useRef(null);
+  const isBgInView = useInView(bgRef, { amount: 0.05 });
+
   return (
     <motion.div
-      className="min-h-screen relative bg-primary py-20 px-4 sm:px-6 lg:px-24 mt-20"
+      className="min-h-screen relative bg-primary py-20 px-4 sm:px-6 lg:px-24 pt-20"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
@@ -237,15 +240,15 @@ const Contact = () => {
       )}
 
       {/* Animated Background Elements */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      <div ref={bgRef} className="absolute inset-0 overflow-hidden pointer-events-none">
         <motion.div
-          className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-teal-400/15 to-cyan-400/15 rounded-full blur-3xl"
-          animate={reducedMotion ? {} : { x: [0, 30, -30, 0], y: [0, -30, 30, 0] }}
+          className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-teal-400/15 to-cyan-400/15 rounded-full blur-2xl"
+          animate={isBgInView && !reducedMotion ? { x: [0, 30, -30, 0], y: [0, -30, 30, 0] } : {}}
           transition={{ duration: 15, repeat: Infinity, ease: 'easeInOut' }}
         />
         <motion.div
-          className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-cyan-400/15 to-teal-400/15 rounded-full blur-3xl"
-          animate={reducedMotion ? {} : { x: [0, -30, 30, 0], y: [0, 30, -30, 0] }}
+          className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-tr from-cyan-400/15 to-teal-400/15 rounded-full blur-2xl"
+          animate={isBgInView && !reducedMotion ? { x: [0, -30, 30, 0], y: [0, 30, -30, 0] } : {}}
           transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }}
         />
       </div>
@@ -258,7 +261,7 @@ const Contact = () => {
               key={p.id}
               className="absolute w-1 h-1 rounded-full bg-gradient-to-r from-teal-400 to-cyan-400"
               style={{ left: p.left, top: p.top }}
-              animate={{ y: [0, -100, 0], opacity: [0, 1, 0], x: [0, p.xOffset, 0] }}
+              animate={isBgInView ? { y: [0, -100, 0], opacity: [0, 1, 0], x: [0, p.xOffset, 0] } : { opacity: 0 }}
               transition={{ duration: p.duration, repeat: Infinity, delay: p.delay }}
             />
           ))}
