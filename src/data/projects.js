@@ -2,6 +2,24 @@
 
 const projects = [
   {
+    title: "Malaabi — Sports Venue Booking Platform",
+    tech: [
+      "Next.js 16",
+      "TypeScript",
+      "Supabase",
+      "Tailwind CSS",
+      "Shadcn/UI",
+      "React Query",
+      "Zod",
+      "next-intl",
+    ],
+    description:
+      "A multi-role SaaS platform for booking football and padel courts across the Middle East. Supports three roles — Player, Venue Owner, and Super Admin — each with a dedicated dashboard. Features full Arabic/English bilingual support with RTL layout, real-time notifications via Supabase Realtime, multiple payment methods, recurring bookings, reviews system, and Row Level Security on all database tables.",
+    image: "/images/malaabi-preview.png",
+    link: "https://sports-booking-self.vercel.app/",
+    year: 2026,
+  },
+  {
     title: "AI Fitness Trainer",
     tech: [
       "Next.js",
