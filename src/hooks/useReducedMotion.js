@@ -1,3 +1,4 @@
+'use client';
 import { useState, useEffect } from 'react';
 
 /**
@@ -5,12 +6,11 @@ import { useState, useEffect } from 'react';
  * Use this to disable or simplify animations for accessibility & performance.
  */
 const useReducedMotion = () => {
-  const [reduced, setReduced] = useState(
-    () => window.matchMedia('(prefers-reduced-motion: reduce)').matches
-  );
+  const [reduced, setReduced] = useState(false); // SSR-safe default
 
   useEffect(() => {
     const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setReduced(mq.matches);
     const handler = (e) => setReduced(e.matches);
     mq.addEventListener('change', handler);
     return () => mq.removeEventListener('change', handler);

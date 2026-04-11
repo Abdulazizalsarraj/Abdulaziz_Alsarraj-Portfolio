@@ -1,8 +1,12 @@
-module.exports = {
+import { createRequire } from 'module';
+const require = createRequire(import.meta.url);
+
+/** @type {import('tailwindcss').Config} */
+export default {
   darkMode: 'class',
   content: [
-    "./index.html",
-    "./src/**/*.{js,ts,jsx,tsx}",
+    "./src/app/**/*.{js,jsx}",
+    "./src/components/**/*.{js,jsx}",
   ],
   theme: {
     extend: {
@@ -25,8 +29,8 @@ module.exports = {
         }
       },
       fontFamily: {
-        sans: ['Inter', 'sans-serif'],
-        mono: ['Fira Code', 'monospace']
+        sans: ['var(--font-inter)', 'sans-serif'],
+        mono: ['var(--font-fira-code)', 'monospace']
       },
       animation: {
         'spin-slow': 'spin 8s linear infinite',
