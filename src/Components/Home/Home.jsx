@@ -101,7 +101,6 @@ const TypewriterText = memo(({ texts, className }) => {
     </span>
   );
 });
-
 // ─── StatCounter ─────────────────────────────────────────────────────────────
 const StatCounter = memo(({ end, label, suffix = "+" }) => {
   const [count, setCount] = useState(0);
